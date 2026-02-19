@@ -5,16 +5,20 @@ project:
 dataset:
   omni_variables: ["B_Total", "BZ_GSE", "flow_speed", "Vx", "T", "Pressure", "E_Field", "proton_density",]
   auroral_variables: ["AE_INDEX", "AL_INDEX", "AU_INDEX"]
+  index_prediction: "AE Index"
   time_range:
-      start: 1995
-      end: 2018
+    start: 1995
+    end: 2018
 
   scaler_type: "robust"
 
 hyparameter:
-  model: "TKAN"
+  model:
+    type: "TKAN"
+    lr: 0.001
+    drop:
   constant:
       Epoch: 300
       delay_length: [30, 60, 180, 300, 600]
-      lr: 0.001
-      drop:
+
+    
