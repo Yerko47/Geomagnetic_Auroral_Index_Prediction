@@ -6,10 +6,13 @@ def config_loader(config_path: str, overrides: dict) -> dict:
     Carga la configuración del archivo YAML y aplica algun overrides entregada en un diccionario.
 
     Args:
-        config_path (str): Path
+        config_path (str): Ubicación de donde se tiene el archivo YAML
+
+    Returns:
+        config (dict): Diccionario que contiene las variables que se trabajaran.
     """
 
-    path = Path(config_path or Path(__file__).parent / "config.yaml")
+    path = Path(config_path or Path(__file__).resolve().parent / "config.yaml")
 
     # Lectura del archivo YAML
     with open(path, "r") as f:

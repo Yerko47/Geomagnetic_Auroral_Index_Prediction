@@ -1,6 +1,6 @@
 import argparse
 
-def config_overrides():
+def config_overrides() -> dict:
     """
     Función para modificar las variables de configuración en el diccionario del archivo YAML en la linea de comandos. Para esto, se debe anteponer en todas las variables que se quiera colocar "--set ", siendo el comando main.py --set key.value=<value>
 
@@ -8,6 +8,9 @@ def config_overrides():
         Normalmente se debe utilizar como key.value=<value> (ej: dataset.scaler_type=<name scaler>)
         En el caso de que se quiera modificar una matriz, se debe colocar como key.value=<v1>,<v2>,<v3>,... (ej: dataset.omni_variables=<V1>,<V2>,<V3>,...)
         En el caso de que se quiera modificar un diccionario dentro del diccionario, se debe colocar como key.value.subvalue=<value> (ej: hyparameter.model.type=<model type>)
+
+    Returns:
+        overrides (dict): Diccionario que contiene las sobreescrituras al archivo YAML
     """
 
     parser = argparse.ArgumentParser(
