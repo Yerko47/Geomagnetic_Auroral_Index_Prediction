@@ -57,6 +57,8 @@ def config_overrides():
         if "," in value: return value.split(",")
 
         return value
-
-
-    return build_nested_overrides(args.set)
+    
+    if args.set is None:
+        return {}
+    else:
+        return build_nested_overrides(args.set)
