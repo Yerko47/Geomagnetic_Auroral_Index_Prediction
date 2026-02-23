@@ -7,8 +7,8 @@ dataset:
   auroral_variables: ["AE_INDEX", "AL_INDEX", "AU_INDEX"]
   index_prediction: "AE Index"
   time_range:
-    start: 1995
-    end: 2018
+    start: "1995-01-01"
+    end: "2018-12-31"
 
   scaler_type: "robust"
 
