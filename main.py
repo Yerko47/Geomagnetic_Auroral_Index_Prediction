@@ -1,4 +1,10 @@
 from src.utils import *
+from src.pipelines import *
+
+
+import torch
+import pandas as pd
+import numpy as np
 
 def main():
 
@@ -7,8 +13,13 @@ def main():
 
     paths = path_file()
 
-    print(config)
-    
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    ts = pd.Timestamp(config["dataset"]["time_range"]["end"]).year
+
+    omni = config["dataset"]["omni_variables"]
+    auroral = config["dataset"]["auroral_variables"]
+
+    df = dataset(config = config, paths = paths)
 
 
 
