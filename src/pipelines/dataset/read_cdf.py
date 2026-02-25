@@ -63,7 +63,6 @@ def dataset(config: dict, paths: dict) -> pd.DataFrame:
     end_time = pd.Timestamp(config["dataset"]["time_range"]["end"])
 
     save_feather_file = paths["raw_file"] / Path(f"data_{start_time.year}_to_{end_time.year}.feather")
-    print(save_feather_file)
     
     if not save_feather_file.exists():
         print(f"\n Procesando OMNI data desde la fecha {start_time.strftime('%Y-%m-%d')} a {end_time.strftime('%Y-%m-%d')}\n"
@@ -101,7 +100,7 @@ def dataset(config: dict, paths: dict) -> pd.DataFrame:
             df = pd.read_feather(save_feather_file)
             df = bad_data(df)
             df = df[[col for col in ["Epoch"] + config["dataset"]["omni_variables"] + config["dataset"]["auroral_variables"]]]
-            
+
             return df
         
         except FileNotFoundError:
