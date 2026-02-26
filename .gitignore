@@ -4,4 +4,5 @@ __pycache__/
 *.env
 *.log
 *.feather
+*.csv
 .ipynb_checkpoints/

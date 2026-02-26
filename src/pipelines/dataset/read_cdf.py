@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-
+#* DATASET
 def dataset(config: dict, paths: dict) -> pd.DataFrame:
     """
     Función encargada de procesar los archivos CDF de OMNI y convertirlos a un DataFrame. Si el archivo .feather ya existe, se carga directamente desde ese archivo. Si no existe, se procesan los archivos CDF, se limpian y se guardan en un archvio .feather. La función devuelve un DataFrame con los tipos correspondiente de datos.
@@ -16,6 +16,8 @@ def dataset(config: dict, paths: dict) -> pd.DataFrame:
         - df (pd.DataFrame): DataFrame con los datos de los archivos CDF procesados, limpios y con los tipos de datos correspondientes.
     """
 
+
+    #* FUNCIÓN PARA LEER ARCHIVOS CDF
     def cdf_read(cdf_file_path: Path) -> pd.DataFrame:
         """
         Función encargada de leer el archivo CDF y convertirlo a un DataFrame. Además, se encarga de convertir la columna "Epoch" a formato datetime y renombrar las columnas 'E' a 'E_Field' y 'F' a 'B_Total'
@@ -36,6 +38,9 @@ def dataset(config: dict, paths: dict) -> pd.DataFrame:
 
         return cdf_df
     
+
+
+    #* FUNCIÓN PARA PROCESAR DATOS ERRONEOS
     def bad_data(df: pd.DataFrame) -> pd.DataFrame:
         """
         Función encargada de procesar los datos erroneos del DataFrame entregado. Para cada columna, se establece un umbral máximo basado en el valor máximo de la columna, redondeado hacia abajo a dos decimales. Los valores que excedan este umbral se reemplazan por NaN. Luego, se realiza una interpolación lineal para llenar los valores faltantes, seguido de un backfill y un forwardfill con un límite de 2 para cada uno. Finalmente, devuelve el DataFrame limpiado.
@@ -56,6 +61,7 @@ def dataset(config: dict, paths: dict) -> pd.DataFrame:
 
         return df
         
+
 
     omni_path = Path("data/omni/hro_1min")
     
