@@ -20,7 +20,11 @@ def main():
     auroral = config["dataset"]["auroral_variables"]
 
     df = dataset(config = config, paths = paths)
+    print(df.shape)
+    #df = df[:1000]
 
+    df = storm_selection(df = df, config = config, paths = paths)
+    print(df.shape)
     
 
 if __name__ == "__main__":
