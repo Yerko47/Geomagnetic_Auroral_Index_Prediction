@@ -19,13 +19,16 @@ def main():
     omni = config["dataset"]["omni_variables"]
     auroral = config["dataset"]["auroral_variables"]
 
+
     df = dataset(config = config, paths = paths)
-    print(df.shape)
-    #df = df[:1000]
+
 
     df = storm_selection(df = df, config = config, paths = paths)
-    print(df.shape)
     
+
+    df, scaler = scaler_fit(df = df, config = config)
+
+
 
 if __name__ == "__main__":
     main()
