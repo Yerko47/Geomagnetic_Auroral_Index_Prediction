@@ -14,6 +14,8 @@ def main():
     paths = path_file()
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    seed = set_seed(42)
+    
     ts = pd.Timestamp(config["dataset"]["time_range"]["end"]).year
 
     omni = config["dataset"]["omni_variables"]
