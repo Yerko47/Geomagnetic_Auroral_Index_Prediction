@@ -10,6 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 #* SELECICCIÓN DE TORMENTAS GEOMAGNÉTICAS
 def storm_selection(df: pd.DataFrame, config: dict, paths: dict) -> pd.DataFrame:
     """
+
     """
 
     storm_list_path = paths["raw_file"] / "storm_list.csv"
@@ -59,3 +60,63 @@ def scaler_fit(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     df = pd.concat([epoch, omni_scaled_variables, auroral_variables], axis=1)
 
     return df, scaler
+
+
+class OMNIDataset(Dataset):
+    def __init__(self, df:pd.DataFrame, config: dict, delay: int, split: str):
+
+        omni_variables = config["dataset"]["omni_variables"]
+        index_prediction = config["dataset"]["index_prediction"]
+
+        x = torch.tensor(df[omni_variables].values, dtype = torch.float32)
+        y = torch.tensor(df[index_prediction].values, dtype = torch.float32)
+
+        train_size = config["dataset"]["train_size"]
+        valid_size = config["dataset"]["valid_size"]
+        
+        indices = torch.arange(len(df))
+
+        train_len = int(train_size * len(df))
+        valid_len = int(valid_size * len(df))
+
+        train_idx = indices[:train_len]
+        valid_idx = indices[train_len: train_len + valid_len]
+        test_idx = indices[train_len + valid_len:]
+
+        split_map = {"train": train_idx, "valid": valid_idx, "test": test_idx}
+        
+        idx = split_map[split]
+        x = x[idx]
+        y = y[idx]
+
+        output_shape = config["dataset"]["output_shape"]
+
+        self.x, y = self.__apply_delay(x, y, delay = delay, output_shape = output_shape)
+        self.y = y.unsqueeze(1)
+
+        if split.lower() == "test":
+            self.epoch = df["Epoch"].iloc[train_len + valid_len + delay -1]
+        
+
+    def __len__(self):
+        return len(self.x)
+    
+    def __getitem__(self, index):
+        return self.x[index], self.y[index]
+    
+    def __apply_delay(self, x: torch.Tensor, y: torch.Tensor, delay: int, output_shape: str):
+        x_delayed = x.unfold(0, delay, 1).transpose(1, 2).contiguous()
+        y = y[delay - 1:]
+
+        if output_shape == "B DF" or output_shape == "B FD":
+            x_delayed = x_delayed.reshape(x_delayed.shape[0], -1)
+    
+        elif output_shape == "B F D":
+            x_delayed = x_delayed.reshape(0, 2, 1)
+        
+        elif output_shape == "B D F":
+            pass
+
+        else: raise ValueError(f"output_shape desconocido: {output_shape}. Debe cambiar a una de las alternativas 'B FD', 'B D F', 'B F D'")
+
+        return x_delayed, y
