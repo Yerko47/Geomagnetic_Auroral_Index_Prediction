@@ -5,7 +5,7 @@ from pathlib import Path
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 #* SELECICCIÓN DE TORMENTAS GEOMAGNÉTICAS
 def storm_selection(df: pd.DataFrame, config: dict, paths: dict) -> pd.DataFrame:
@@ -95,7 +95,7 @@ class OMNIDataset(Dataset):
         self.y = y.unsqueeze(1)
 
         if split.lower() == "test":
-            self.epoch = df["Epoch"].iloc[train_len + valid_len + delay -1]
+            self.epoch = df["Epoch"].iloc[train_len + valid_len + delay -1:]
         
 
     def __len__(self):

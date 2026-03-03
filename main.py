@@ -3,6 +3,7 @@ from src.pipelines import *
 
 
 import torch
+from torch.utils.data import DataLoader
 import pandas as pd
 import numpy as np
 
@@ -36,20 +37,18 @@ def main():
 
     for delay in delay_length:
 
-        datatorch_train = OMNIDataset(df, config, delay = delay, split = "train")
-        datatorch_valid = OMNIDataset(df, config, delay = delay, split = "valid")
-        datatorch_test = OMNIDataset(df, config, delay = delay, split = "test")
+        train_datatorch = OMNIDataset(df, config, delay = delay, split = "train")
+        valid_datatorch = OMNIDataset(df, config, delay = delay, split = "valid")
+        test_datatorch = OMNIDataset(df, config, delay = delay, split = "test")
     
+        test_epoch = test_datatorch.epoch
 
-    
+        train_loader = DataLoader(train_datatorch, batch_size = 1024, shuffle = True)
+        valid_loader = DataLoader(valid_datatorch, batch_size = 1024, shuffle = False)
+        test_loader = DataLoader(test_datatorch, batch_size = 512, shuffle = False)
 
-    #train_torch = OMNI_Dataset(df = df, config = config, delay = 30, split = "train")
-    #val_torch = OMNI_Dataset(df = df, config = config, delay = 30, split = "val")
-    #test = OMNI_Dataset(df = df, config = config, delay = 30, split = "test")
-    #print(test.X.shape)
-    #print(test.epoch)
-    #test_torch, test_epoch = (test.X, test.y), test.epoch
-
+        del train_datatorch, valid_datatorch, test_datatorch
+        
 
 
 
