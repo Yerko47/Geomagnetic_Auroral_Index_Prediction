@@ -5,20 +5,27 @@ project:
 dataset:
   omni_variables: ["B_Total", "BZ_GSE", "flow_speed", "Vx", "T", "Pressure", "E_Field", "proton_density",]
   auroral_variables: ["AE_INDEX", "AL_INDEX", "AU_INDEX"]
-  index_prediction: "AE Index"
+  index_prediction: "AE_INDEX"
   time_range:
     start: "1995-01-01"
     end: "2018-12-31"
 
-  scaler_type: "robust"
+  scaler_type: "standard"
+  train_size: 0.60
+  valid_size: 0.25
+
+  # B: Batch  |  F: Features  |  D: Delay
+  output_shape: "B D F"       # "B FD" -> [batch, features * delay]  |  "B D F" -> [batch, delay, features]  |  "B F D" -> [batch, features, delay]
+
+  
 
 hyparameter:
-  model:
+  model:  
     type: "TKAN"
     lr: 0.001
     drop:
   constant:
       Epoch: 300
-      delay_length: [30, 60, 180, 300, 600]
+      delay_length: [30, 60, 100]
 
     
