@@ -63,7 +63,7 @@ def scaler_fit(df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
 
 class OMNIDataset(Dataset):
-    def __init__(self, df:pd.DataFrame, config: dict, delay: int, split: str):
+    def __init__(self, df:pd.DataFrame, config: dict, delay: int, split: str) -> torch.Tensor:
 
         omni_variables = config["dataset"]["omni_variables"]
         index_prediction = config["dataset"]["index_prediction"]

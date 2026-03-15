@@ -23,9 +23,9 @@ hyparameter:
   model:  
     type: "TKAN"
     lr: 0.001
-    drop:
+    drop: 0.3
   constant:
       Epoch: 300
-      delay_length: [30, 60, 100]
+      delay_length: [30]
 
     

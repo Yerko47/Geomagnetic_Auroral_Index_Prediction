@@ -103,10 +103,10 @@ def sparse_mask(in_dim: int, out_dim: int):
     out_nearest = torch.argmin(dist_mat, dim = 1)
 
     in_connection = torch.stack([torch.arange(in_dim), in_nearest]).permute(1,0)
-    out_connection = torch.stack([torch.arange(out_dim), out_nearest]).permute(1,0)
+    out_connection = torch.stack([out_nearest, torch.arange(out_dim)]).permute(1,0)
 
     all_connection = torch.cat([in_connection, out_connection], dim = 0)
 
-    mask[all_connection[:, 0], all_connection[:, 1]] = 1
+    mask[all_connection[:, 0], all_connection[:, 1]] = 1.0
 
     return mask
