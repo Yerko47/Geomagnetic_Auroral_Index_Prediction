@@ -84,5 +84,45 @@ class KANLayer(nn.Module):
 
     def update_grid_from_samples(self, x, mode = "sample"):
         """
+        Reajusta el grid de los B-spline según los datos
+
+        Args:
+            - mode (str): 
+                -> "sample": Modo por defecto y usa los datos reales que se le pasa a la función
+                -> "grid": Añade el uso del grid como puntos de muestreo, no los datos
         """
+
+        def get_grid(num_interval):
+            """
+            Crea un nuevo grid
+            """
+            ids = [int(batch / num_interval * i) for i in range(num_interval)] + [-1]
+            grid_adaptive = x_pos[ids, :].permute(1, 0)
+            margin = 0.00
+            h = (grid_adaptive[:,[-1]] - grid_adaptive[:,[0]] + 2 * margin)/num_interval
+            grid_uniform = (grid_adaptive[:, [-1]] - margin + h * torch.arange(num_interval + 1,)[None, :])
+            grid = (self.grid_eps * grid_uniform) + (1 - self.grid_eps) * grid_adaptive
+
+            return grid
+
+
+        batch = x.shape[0]
+
+        x_pos = torch.sort(x, dim = 0)[0]
+        y_eval = coef2curve(x_pos, self.grid, self.coef, self.k)
+        num_interval = self.grid.shape[1] - 1 - (2 * self.k)
+
+        
+        
+        grid = get_grid(num_interval)
+
+        if mode == "grid":
+            sample_grid = get_grid(2 * num_interval)
+            x_pos = sample_grid.permute(1, 0)
+            y_eval = coef2curve(x_pos, self.grid, self.coef, self.k)
+
+        self.grid.data = extend_grid(grid, k_extend = self.k)
+        self.coef.data = curve2coef(x_pos, y_eval, self.grid, self.k)
+
+
         
