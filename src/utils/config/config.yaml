@@ -15,7 +15,7 @@ dataset:
   valid_size: 0.25
 
   # B: Batch  |  F: Features  |  D: Delay
-  output_shape: "B D F"       # "B FD" -> [batch, features * delay]  |  "B D F" -> [batch, delay, features]  |  "B F D" -> [batch, features, delay]
+  output_shape: "B DF"       # "B FD" -> [batch, features * delay]  |  "B D F" -> [batch, delay, features]  |  "B F D" -> [batch, features, delay]
 
   
 

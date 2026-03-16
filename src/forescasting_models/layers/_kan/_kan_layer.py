@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .utils import *
+from ._utils import *
 
 
 class KANLayer(nn.Module):
