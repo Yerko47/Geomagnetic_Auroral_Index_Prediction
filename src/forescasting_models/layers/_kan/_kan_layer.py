@@ -1,4 +1,3 @@
-import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -60,10 +59,10 @@ class KANLayer(nn.Module):
         self.mask = nn.Parameter(sparse_mask(in_dim, out_dim)).requires_grad_(False)
 
         # Peso de la función base
-        self.scale_base = torch.nn.Parameter(scale_base_mu * (1 / math.sqrt(in_dim)) + scale_base_sigma * (torch.rand(in_dim, out_dim) * 2 - 1) * (1/math.sqrt(in_dim))).requires_grad_(sb_trainable)
+        self.scale_base = torch.nn.Parameter(scale_base_mu * (1 / np.sqrt(in_dim)) + scale_base_sigma * (torch.rand(in_dim, out_dim) * 2 - 1) * (1/np.sqrt(in_dim))).requires_grad_(sb_trainable)
 
         # Peso del Spline
-        self.scale_sp = nn.Parameter(torch.ones(in_dim, out_dim) * scale_sp * 1 / math.sqrt(in_dim) * self.mask).requires_grad_(sp_trainable)
+        self.scale_sp = nn.Parameter(torch.ones(in_dim, out_dim) * scale_sp * 1 / np.sqrt(in_dim) * self.mask).requires_grad_(sp_trainable)
 
         self.grid_eps = grid_eps
 
