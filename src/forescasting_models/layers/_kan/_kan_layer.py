@@ -7,6 +7,9 @@ from ._utils import *
 
 class KANLayer(nn.Module):
     """
+    Capa Kolmogorov-Arnold Network (KAN) que implementa funciones de activación usando B-splines.
+    Esta capa combina una función base y funciones B-spline para crear transformaciones no lineales
+    adaptativas en las conexiones entre neuronas.
     """
     def __init__(self, 
                  in_dim: int, 
@@ -69,6 +72,11 @@ class KANLayer(nn.Module):
 
     def forward(self, x):
         """
+        Pasa la entrada hacia adelante a través de la capa KAN.
+        Args:
+            x (torch.Tensor): Tensor de entrada de forma (batch_size, in_dim).
+        Returns:
+            torch.Tensor: Salida transformada de forma (batch_size, out_dim).
         """
         base = self.base_fun(x)
 
@@ -83,17 +91,26 @@ class KANLayer(nn.Module):
 
     def update_grid_from_samples(self, x, mode = "sample"):
         """
-        Reajusta el grid de los B-spline según los datos
-
+        Reajusta el grid de los B-spline según los datos proporcionados.
+        Adapta el grid de manera que sea sensible a la distribución de los datos,
+        permitiendo que los B-splines se ajusten mejor a los datos de entrada.
         Args:
-            - mode (str): 
-                -> "sample": Modo por defecto y usa los datos reales que se le pasa a la función
-                -> "grid": Añade el uso del grid como puntos de muestreo, no los datos
+            x (torch.Tensor): Tensor de entrada de forma (batch_size, in_dim).
+            mode (str): Modo de muestreo para el grid.
+                - "sample": Usa los datos reales pasados a la función.
+                - "grid": Usa puntos del grid como puntos de muestreo en lugar de los datos.
+        Returns:
+            None (actualiza los parámetros self.grid y self.coef internamente).
         """
 
         def get_grid(num_interval):
             """
-            Crea un nuevo grid
+            Crea un nuevo grid adaptativo basado en los datos de entrada.
+            Combina un grid uniforme con un grid adaptativo según grid_eps.
+            Args:
+                num_interval (int): Número de intervalos del grid.
+            Returns:
+                torch.Tensor: Grid adaptativo de forma (in_dim, num_interval + 1).
             """
             ids = [int(batch / num_interval * i) for i in range(num_interval)] + [-1]
             grid_adaptive = x_pos[ids, :].permute(1, 0)
