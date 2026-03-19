@@ -78,8 +78,14 @@ def curve2coef(x: torch.Tensor, y: torch.Tensor, grid: torch.Tensor, k: int) -> 
 
 def extend_grid(grid: torch.tensor, k_extend: int) -> torch.Tensor:
     """
+    Evalúa los B-spline cerca de los bordes.
+    Args:
+        grid (torch.Tensor): Cuadrícula de nodos.
+        k_extend (int): Valor para extender el grid.
+    Returns:
+        torch.Tensor: Cuadrícula extendida en los bordes.
     """
-    h = (grid[:,[-1]] - grid[:, [0]]) / (grid.shape[1] - 1)
+    h = (grid[:, [-1]] - grid[:, [0]]) / (grid.shape[1] - 1)
 
     for i in range(k_extend):
         grid = torch.cat([grid[:, [0]] - 1, grid], dim = 1)
@@ -89,8 +95,16 @@ def extend_grid(grid: torch.tensor, k_extend: int) -> torch.Tensor:
 
 
 
-def sparse_mask(in_dim: int, out_dim: int):
+def sparse_mask(in_dim: int, out_dim: int) -> torch.Tensor:
     """
+    Crea una máscara dispersa que conecta neuronas de entrada y salida en un eje entre 0 y 1:
+    - Cada entrada se conecta con el output más cercano
+    - Cada salida se conecta con el input más cercano
+    Args:
+        in_dim (int): Dimensión de los valores de entrada.
+        out_dim (int): Dimensión de los valores de salida.
+    Returns:
+        torch.Tensor: Máscara dispersa de dimensión (in_dim, out_dim).
     """
     in_coords = torch.arange(in_dim) * (1/in_dim) + (1/(2 * in_dim))
     out_coords = torch.arange(out_dim) * (1/out_dim) + (1/(2 * out_dim))
