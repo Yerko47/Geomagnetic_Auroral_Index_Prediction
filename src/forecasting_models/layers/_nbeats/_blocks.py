@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from ._utils import *
 from .._kan import KANLayer
 
-class SeasonalMixin(nn.Module):
+class SeasonalMixin:
     """
     Mixin que proporciona funcionalidad de componente estacional para redes neuronales N-BEATS.
     Implementa funciones basis estacionales usando funcioniones trigonométricas (coseno y seno).
@@ -241,3 +241,33 @@ class NBEATSBlock(nn.Module):
             self.outputs.append(x.clone().detach())
             return x
 
+
+class NBEATSSeasonalBlock(NBEATSBlock, SeasonalMixin):
+    def __init__(self, 
+                  units: int, 
+                  thetas_dim: int,
+                  num_block_layers: int,
+                  backast_length: int,
+                  forecasst_length: int,
+                  nb_harmonics: int,
+                  min_period: int,
+                  dropout: float,
+                  centered: bool,
+                  **kan_kwargs):
+        
+        thetas_dim = nb_harmonics if nb_harmonics else forecasst_length
+
+        super().__init__(units = units,
+                         thetas_dim = thetas_dim,
+                         num_block_layers = num_block_layers,
+                         backast_length = backast_length,
+                         forecasst_length = forecasst_length,
+                         dropout = dropout,
+                         **kan_kwargs,
+                         )
+        self._init_seasonal(backcast_length = backast_length, forecast_length = forecasst_length, thetas_dim = thetas_dim, min_period = min_period, centered = centered)
+
+
+    def forward(self, x: torch.Tensor):
+        x = super().forward(x)
+        return self.seasonal_forward(x, self.thetha_b_fc, self.theta_f_fc)
