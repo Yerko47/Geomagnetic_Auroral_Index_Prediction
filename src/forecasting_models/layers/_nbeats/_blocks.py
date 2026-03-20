@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ._utils import *
-from forecasting_models.layers._kan._kan_layer import KANLayer
+from .._kan import KANLayer
 
 class SeasonalMixin(nn.Module):
     """
@@ -126,7 +126,118 @@ class TrendMixin:
         return backcast, forecast
 
 
+class NBEATSBlock(nn.Module): 
+    def __init__(self, 
+                 type_block: str,
+                 units: int, 
+                 thetas_dim: int, 
+                 num_block_layers: int,
+                 backcast_length: int,
+                 forecast_length: int,
+                 k: int,
+                 num: int,
+                 noises_scale: float,
+                 scale_base_mu: float,
+                 scale_base_sigma: float,
+                 scale_sp: float,
+                 base_fun: nn.Module,
+                 grid_eps: float,
+                 grid_range: list[float],
+                 sp_trainable: bool,
+                 sb_trainable: bool,
+                 sparse_init: bool,
+                 dropout: float):
+        """
+        Inicializa un bloque N-BEATS con capas KAN o lineales.
+        
+        Args:
+            type_block (str): Tipo de bloque a usar ('KAN' o 'LINEAR').
+            units (int): Número de unidades/neuronas en las capas ocultas.
+            thetas_dim (int): Dimensión de los parámetros theta para el forecasting.
+            num_block_layers (int): Número de capas en el stack del bloque.
+            backcast_length (int): Longitud de la ventana de backcasting.
+            forecast_length (int): Longitud de la ventana de forecasting.
+            k (int): Orden de los B-splines para capas KAN.
+            num (int): Número de nodos en la cuadrícula para capas KAN.
+            noises_scale (float): Escala del ruido para inicialización de coeficientes KAN.
+            scale_base_mu (float): Media para la escala de la función base en KAN.
+            scale_base_sigma (float): Desviación estándar para la escala de la función base en KAN.
+            scale_sp (float): Escala para parámetros spline en KAN.
+            base_fun (nn.Module): Función base a usar en capas KAN.
+            grid_eps (float): Epsilon para la cuadrícula en KAN.
+            grid_range (list[float]): Rango [min, max] de la cuadrícula en KAN.
+            sp_trainable (bool): Si los parámetros spline son entrenable en KAN.
+            sb_trainable (bool): Si la escala de la función base es entrenable en KAN.
+            sparse_init (bool): Si usar inicialización dispersa en KAN.
+            dropout (float): Tasa de dropout entre capas.
+        """
+        super(NBEATSBlock, self).__init__()
+        
+        self.units = units
+        self.thetas_dim = thetas_dim
+        self.backcast_length = backcast_length
+        self.forecast_length = forecast_length
+        self.dropout = np.abs(dropout)
+        
+        if type_block.upper() == "KAN":
+            self.kan_params = dict(
+                num = num,
+                k = k,
+                noises_scale = noises_scale,
+                scale_base_mu = scale_base_mu,
+                scale_base_sigma = scale_base_sigma,
+                scale_sp = scale_sp,
+                base_fun = base_fun,
+                grid_eps = grid_eps,
+                grid_range = grid_range,
+                sp_trainable = sp_trainable,
+                sb_trainable = sb_trainable,
+            )
+            
+        layers = (
+            [KANLayer(in_dim = backcast_length, out_dim = units, **self.kan_params)] if type_block.upper() == "KAN" 
+            else 
+            [nn.Linear(backcast_length, units), nn.ReLU()]
+        )
 
+        for _ in range(num_block_layers - 1):
+            layers.extend(
+                [nn.Dropout(self.dropout), KANLayer(in_dim = units, out_dim = units, **self.kan_params)] if type_block.upper() == "KAN"
+                else
+                [linear(input_size = units, output_size = units, dropout = self.dropout), nn.ReLU()]
+            )
 
+        self.fc = nn.Sequential(*layers)
 
+        self.theta_f_fc = self.thetha_b_fc = KANLayer(in_dim = units, out_dim = thetas_dim, **self.kan_params) if type_block.upper() == "KAN" else nn.Linear(units, thetas_dim, bias = False)
+
+        self.type_block = type_block
+
+    def forward(self, x: torch.tensor):
+        """
+        Realiza el paso forward a través del bloque N-BEATS.
+        
+        Para bloques KAN: Propaga la entrada a través de las capas KAN almacenando 
+        los outputs intermedios. Para bloques lineales: Propaga simplemente a través 
+        de las capas lineales y ReLU.
+        
+        Args:
+            x (torch.tensor): Tensor de entrada de forma (batch_size, backcast_length).
+        
+        Returns:
+            torch.tensor: Salida del bloque de forma (batch_size, units) tras pasar 
+                         por todas las capas. Si es KAN, también almacena outputs 
+                         intermedios en self.outputs para análisis.
+        """
+        if self.type_block.upper() != "KAN":
+            return self.fc(x)
+        else:
+            self.outputs = []
+            self.outputs.append(x.clone().detach())
+            for layer in self.fc:
+                x = layer(x)
+
+                self.outputs.append(x.clone().detach())
+            self.outputs.append(x.clone().detach())
+            return x
 
