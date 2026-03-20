@@ -50,19 +50,19 @@ class KANLayer(nn.Module):
         self.base_fun = base_fun
 
         # Crear grid inicial
-        grid = torch.linspace(grid_range[0], grid_range[1], steps = num + 1)
+        grid = torch.linspace(grid_range[0], grid_range[1], steps=num + 1)[None,:].expand(self.in_dim, num + 1)
         grid = extend_grid(grid, k_extend = k)
         self.grid = nn.Parameter(grid).requires_grad_(False)
 
         # Crear ruido inicial
         noises = (torch.rand(self.num + 1, self.in_dim, self.out_dim) - 1/2) * (noises_scale / num)
-        self.coef = nn.Parameter(curve2coef(self.grid[:, k, -k].permute(1, 0), noises, self.grid, k))
+        self.coef = nn.Parameter(curve2coef(self.grid[:,k:-k].permute(1,0), noises, self.grid, k))
 
         # Inicializar máscaras de conexión
         self.mask = nn.Parameter(sparse_mask(in_dim, out_dim)).requires_grad_(False)
 
         # Peso de la función base
-        self.scale_base = torch.nn.Parameter(scale_base_mu * (1 / np.sqrt(in_dim)) + scale_base_sigma * (torch.rand(in_dim, out_dim) * 2 - 1) * (1/np.sqrt(in_dim))).requires_grad_(sb_trainable)
+        self.scale_base = nn.Parameter(scale_base_mu * (1 / np.sqrt(in_dim)) + scale_base_sigma * (torch.rand(in_dim, out_dim) * 2 - 1) * (1/np.sqrt(in_dim))).requires_grad_(sb_trainable)
 
         # Peso del Spline
         self.scale_sp = nn.Parameter(torch.ones(in_dim, out_dim) * scale_sp * 1 / np.sqrt(in_dim) * self.mask).requires_grad_(sp_trainable)

@@ -87,9 +87,10 @@ def extend_grid(grid: torch.tensor, k_extend: int) -> torch.Tensor:
     """
     h = (grid[:, [-1]] - grid[:, [0]]) / (grid.shape[1] - 1)
 
+
     for i in range(k_extend):
-        grid = torch.cat([grid[:, [0]] - 1, grid], dim = 1)
-        grid = torch.cat([grid, grid[:, [-1]] + 1], dim = 1)
+        grid = torch.cat([grid[:, [0]] - h, grid], dim = 1)
+        grid = torch.cat([grid, grid[:, [-1]] + h], dim = 1)
 
     return grid
 
