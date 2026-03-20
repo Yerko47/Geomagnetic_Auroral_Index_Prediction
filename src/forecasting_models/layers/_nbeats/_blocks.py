@@ -145,7 +145,6 @@ class NBEATSBlock(nn.Module):
                  grid_range: list[float],
                  sp_trainable: bool,
                  sb_trainable: bool,
-                 sparse_init: bool,
                  dropout: float):
         """
         Inicializa un bloque N-BEATS con capas KAN o lineales.
@@ -168,7 +167,6 @@ class NBEATSBlock(nn.Module):
             grid_range (list[float]): Rango [min, max] de la cuadrícula en KAN.
             sp_trainable (bool): Si los parámetros spline son entrenable en KAN.
             sb_trainable (bool): Si la escala de la función base es entrenable en KAN.
-            sparse_init (bool): Si usar inicialización dispersa en KAN.
             dropout (float): Tasa de dropout entre capas.
         """
         super(NBEATSBlock, self).__init__()
@@ -209,7 +207,7 @@ class NBEATSBlock(nn.Module):
 
         self.fc = nn.Sequential(*layers)
 
-        self.theta_f_fc = self.thetha_b_fc = KANLayer(in_dim = units, out_dim = thetas_dim, **self.kan_params) if type_block.upper() == "KAN" else nn.Linear(units, thetas_dim, bias = False)
+        self.theta_f_fc = self.theta_b_fc = KANLayer(in_dim = units, out_dim = thetas_dim, **self.kan_params) if type_block.upper() == "KAN" else nn.Linear(units, thetas_dim, bias = False)
 
         self.type_block = type_block
 
@@ -244,30 +242,192 @@ class NBEATSBlock(nn.Module):
 
 class NBEATSSeasonalBlock(NBEATSBlock, SeasonalMixin):
     def __init__(self, 
-                  units: int, 
-                  thetas_dim: int,
-                  num_block_layers: int,
-                  backast_length: int,
-                  forecasst_length: int,
-                  nb_harmonics: int,
-                  min_period: int,
-                  dropout: float,
-                  centered: bool,
-                  **kan_kwargs):
+                 type_block: str,
+                 units: int, 
+                 thetas_dim: int,
+                 num_block_layers: int,
+                 backast_length: int,
+                 forecast_length: int,
+                 nb_harmonics: int,
+                 min_period: int,
+                 dropout: float,
+                 centered: bool,
+                 **kan_kwargs):
+        """
+        Inicializa un bloque N-BEATS especializado en componentes estacionales.
         
-        thetas_dim = nb_harmonics if nb_harmonics else forecasst_length
+        Hereda de NBEATSBlock y SeasonalMixin para modelar patrones estacionales/cíclicos 
+        en series temporales usando funciones bases trigonométricas (coseno y seno).
+        
+        Args:
+            type_block (str): Tipo de bloque a usar ('KAN' o 'LINEAR').
+            units (int): Número de unidades en las capas ocultas.
+            thetas_dim (int): Dimensión de los parámetros theta. Si nb_harmonics es 0, 
+                            se usa forecast_length como thetas_dim.
+            num_block_layers (int): Número de capas en el stack del bloque.
+            backast_length (int): Longitud de la ventana de backcasting.
+            forecast_length (int): Longitud de la ventana de forecasting.
+            nb_harmonics (int): Número de armónicos para la base estacional. Si es 0, 
+                              se usa forecast_length.
+            min_period (int): Período mínimo para las frecuencias estacionales.
+            dropout (float): Tasa de dropout entre capas.
+            centered (bool): Si es True, centra las linspace para las bases.
+            **kan_kwargs: Parámetros adicionales para las capas KAN (k, num, noises_scale, etc.).
+        """
+        
+        thetas_dim = nb_harmonics if nb_harmonics else forecast_length
 
-        super().__init__(units = units,
+        super().__init__(type_block = type_block,
+                         units = units,
                          thetas_dim = thetas_dim,
                          num_block_layers = num_block_layers,
                          backast_length = backast_length,
-                         forecasst_length = forecasst_length,
+                         forecast_length = forecast_length,
                          dropout = dropout,
+                         centered = centered
                          **kan_kwargs,
                          )
-        self._init_seasonal(backcast_length = backast_length, forecast_length = forecasst_length, thetas_dim = thetas_dim, min_period = min_period, centered = centered)
+        self._init_seasonal(backcast_length = backast_length, forecast_length = forecast_length, thetas_dim = thetas_dim, min_period = min_period, centered = centered)
 
 
     def forward(self, x: torch.Tensor):
+        """
+        Realiza el paso forward del bloque estacional.
+        
+        Propaga la entrada a través del bloque base N-BEATS y luego aplica 
+        el componente estacional usando funciones trigonométricas.
+        
+        Args:
+            x (torch.Tensor): Tensor de entrada de forma (batch_size, backcast_length).
+        
+        Returns:
+            tuple: (backcast, forecast) con los valores descompuestos estacionalmente.
+        """
         x = super().forward(x)
-        return self.seasonal_forward(x, self.thetha_b_fc, self.theta_f_fc)
+        return self.seasonal_forward(x, self.theta_b_fc, self.theta_f_fc)
+
+
+class NBEATSTrendBlock(NBEATSBlock, TrendMixin):
+    def __init__(self,
+                 type_block: str,
+                 units: int, 
+                 thetas_dim: int,
+                 num_block_layers: int,
+                 backast_length: int,
+                 forecast_length: int,
+                 dropout: float,
+                 centered: bool,
+                 **kan_kwargs):
+        """
+        Inicializa un bloque N-BEATS especializado en componentes de tendencia.
+        
+        Hereda de NBEATSBlock y TrendMixin para modelar tendencias en series temporales 
+        usando funciones bases polinomiales.
+        
+        Args:
+            type_block (str): Tipo de bloque a usar ('KAN' o 'LINEAR').
+            units (int): Número de unidades en las capas ocultas.
+            thetas_dim (int): Grado del polinomio para la función base de tendencia.
+            num_block_layers (int): Número de capas en el stack del bloque.
+            backast_length (int): Longitud de la ventana de backcasting.
+            forecast_length (int): Longitud de la ventana de forecasting.
+            dropout (float): Tasa de dropout entre capas.
+            centered (bool): Si es True, centra las linspace para las bases polinomiales.
+            **kan_kwargs: Parámetros adicionales para las capas KAN (k, num, noises_scale, etc.).
+        """
+        super().__init__(
+            self,
+            type_block = type_block,
+            units = units,
+            thetas_dim = thetas_dim,
+            num_block_layers = num_block_layers,
+            backast_length = backast_length,
+            forecast_length = forecast_length,
+            dropout = dropout,
+            centered = centered,
+            **kan_kwargs
+        )
+
+        self._init_trend(backcast_length = backast_length, forecast_length = forecast_length, thetas_dim = thetas_dim, centered = centered) 
+
+    
+    def forward(self, x: torch.Tensor):
+        """
+        Realiza el paso forward del bloque de tendencia.
+        
+        Propaga la entrada a través del bloque base N-BEATS y luego aplica 
+        el componente de tendencia usando funciones polinomiales.
+        
+        Args:
+            x (torch.Tensor): Tensor de entrada de forma (batch_size, backcast_length).
+        
+        Returns:
+            tuple: (backcast, forecast) con los valores descompuestos con tendencia.
+        """
+        x = super().forward(x)
+        return self.trend_forward(x, self.theta_b_fc, self.theta_f_fc)
+        
+
+class NBEATSGeneralBlock(NBEATSBlock):
+    def __init__(self,
+                 type_block: str,
+                 units: int,
+                 thetas_dim: int,
+                 num_block_layers: int,
+                 backast_length: int,
+                 forecast_length: int,
+                 dropout: float,
+                 **kan_kwargs):
+        """
+        Inicializa un bloque N-BEATS genérico sin descomposición específica.
+        
+        Hereda de NBEATSBlock para crear un bloque general que genera predicciones
+        de backcasting y forecasting sin asumir una descomposición particular 
+        (estacional, tendencia, etc.).
+        
+        Args:
+            type_block (str): Tipo de bloque a usar ('KAN' o 'LINEAR').
+            units (int): Número de unidades en las capas ocultas.
+            thetas_dim (int): Dimensión de los parámetros theta.
+            num_block_layers (int): Número de capas en el stack del bloque.
+            backast_length (int): Longitud de la ventana de backcasting.
+            forecast_length (int): Longitud de la ventana de forecasting.
+            dropout (float): Tasa de dropout entre capas.
+            **kan_kwargs: Parámetros adicionales para las capas KAN (k, num, noises_scale, etc.).
+        """
+        super().__init__(
+            self,
+            type_block = type_block,
+            units = units,
+            thetas_dim = thetas_dim,
+            num_block_layers = num_block_layers,
+            backast_length = backast_length,
+            forecast_length = forecast_length,
+            dropout = dropout,
+            **kan_kwargs
+        )
+
+        self.backcast_fc = nn.Linear(thetas_dim, backast_length)
+        self.forecast_fc = nn.Linear(thetas_dim, forecast_length)
+
+    def forward(self, x: torch.Tensor):
+        """
+        Realiza el paso forward del bloque general.
+        
+        Propaga la entrada a través del bloque base N-BEATS, calcula los parámetros
+        theta con ReLU para backcasting y forecasting, y luego genera las predicciones
+        finales multiplicando por las capas lineales.
+        
+        Args:
+            x (torch.Tensor): Tensor de entrada de forma (batch_size, backcast_length).
+        
+        Returns:
+            tuple: (backcast, forecast) predicciones de backcasting y forecasting,
+                   ambas de forma (batch_size, *_length).
+        """
+        x = super().forward(x)
+        theta_b = F.relu(self.theta_b_fc(x))
+        theta_f = F.relu(self.theta_f_fc(x))
+
+        return self.backcast_fc(theta_b), self.forecast_fc(theta_f)
+        
