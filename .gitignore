@@ -1,8 +1,17 @@
 *.pyc
 __pycache__/
+
 .env
 *.env
+
 *.log
+
 *.feather
 *.csv
+
 .ipynb_checkpoints/
+*.ipynb
+
+docs/
+
+*.pdf
